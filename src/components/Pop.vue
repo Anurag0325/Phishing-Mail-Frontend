@@ -99,36 +99,22 @@ export default {
         this.fetchData(colleagueId);
     },
     methods: {
-        // async fetchData(colleagueId) {
-        //     try {
-        //         const response = await fetch(`http://127.0.0.1:5000/phishing_opened/${colleagueId}`);
-        //         const data = await response.json();
-        //         if (data.showPopup) {
-        //             this.showPopup = true;
-        //         } else {
-        //             this.showPopup = false;
-        //         }
-        //     } catch (error) {
-        //         console.error('Error fetching data:', error);
-        //     }
-        // },
-
 
         async fetchData(colleagueId) {
-    console.log('Fetching data for colleague ID:', colleagueId); // Check what ID is being sent
-    try {
-        const response = await fetch(`https://phishing-mail-application.onrender.com/phishing_opened/${colleagueId}`);
-        const data = await response.json();
-        console.log('Response data:', data); // Log the response data
-        if (data.showPopup) {
-            this.showPopup = true;
-        } else {
-            this.showPopup = false;
-        }
-    } catch (error) {
-        console.error('Error fetching data:', error);
-    }
-},
+            console.log('Fetching data for colleague ID:', colleagueId); // Check what ID is being sent
+            try {
+                const response = await fetch(`https://phishing-mail-application.onrender.com/phishing_opened/${colleagueId}`);
+                const data = await response.json();
+                console.log('Response data:', data); // Log the response data
+                if (data.showPopup) {
+                    this.showPopup = true;
+                } else {
+                    this.showPopup = false;
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        },
 
         startTutorial() {
             this.showStudyMaterial = true;

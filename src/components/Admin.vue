@@ -2,10 +2,10 @@
     <div>
         <nav class="navbar">
             <div class="navbar-brand">
-                <img src="KVQA.jpeg" alt="Logo" class="logo" />
-                <h1>KVQA Admin</h1>
+                <img src="Xploit2Secure.jpeg" alt="Logo" class="logo" />
                 <div class="navbar-buttons">
                     <button @click="openQuestionModal">Manage Questions</button>
+                    <button @click="logout">Logout</button>
                 </div>
             </div>
         </nav>
@@ -19,11 +19,7 @@
                             <input v-model="question.question_text" placeholder="Question Text" required />
                             <div class="options-container">
                                 <div v-for="(option, index) in question.options" :key="index" class="option-item">
-                                    <input
-                                        v-model="question.options[index]"
-                                        placeholder="Option"
-                                        required
-                                    />
+                                    <input v-model="question.options[index]" placeholder="Option" required />
                                     <button type="button" @click="deleteOption(index)">Delete Option</button>
                                 </div>
                                 <button type="button" @click="addOption">Add Option</button>
@@ -39,8 +35,8 @@
                                 </div>
                             </div>
                         </form>
-                    </div>  
-                              
+                    </div>
+
                     <div class="questions-list">
                         <h3>Questions List</h3>
                         <table>
@@ -71,27 +67,21 @@
                 </div>
             </div>
 
-            <h2>Admin Dashboard</h2>
-            <div class="admin-panel">
-                <label for="department">Select Department:</label>
-                <select v-model="selectedDepartment" id="department">
-                    <option value="" disabled>Select a department</option>
+            <h2 class="candidate">Dashboard</h2>
+
+            <div class="select-department-container">
+                <select id="department" class="select-department" v-model="selectedDepartment">
+                    <option value="" disabled>Select Department</option>
                     <option value="HR">HR</option>
                     <option value="Accounts">Accounts</option>
                 </select>
-
-                <div class="upload-section">
-                    <label for="fileUpload">Upload Colleagues Data (.xlsx):</label>
-                    <input type="file" id="fileUpload" @change="handleFileUpload" />
-                    <button @click="uploadColleaguesData">Upload</button>
-                </div>
             </div>
-        
+
+
             <button @click="sendPhishingEmails">Send Phishing Email</button>
             <button @click="downloadReport">Download Performance Report</button>
-            <button @click="emailedCandidatesReport">Generate Emailed Candidates Report</button>
-        
-            <h2>Candidate Reports</h2>
+
+            <h2 class="candidate">Candidate Reports</h2>
 
             <table>
                 <thead>
@@ -102,7 +92,6 @@
                         <th>Answered</th>
                         <th>Correct Answers</th>
                         <th>Score (out of 100)</th>
-                        <th>Download Report</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -113,9 +102,6 @@
                         <td>{{ report.answered ? 'Yes' : 'No' }}</td>
                         <td>{{ calculateCorrectAnswers(report.answers) }}/{{ questions.length }}</td>
                         <td>{{ calculateScoreOutOf100(report.answers) }}%</td>
-                        <td>
-                            <button @click="downloadPDF(report.colleague_id)">Download PDF</button>
-                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -149,6 +135,24 @@ export default {
 
     methods: {
 
+        logout() {
+            fetch('https://phishing-mail-application.onrender.com/logout', {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                },
+            })
+            .then(response => {
+                if (response.ok) {
+                localStorage.removeItem('token');
+                this.$router.push('/');
+                }
+            })
+            .catch(error => {
+                console.error('Logout failed:', error);
+            });
+        },
+
         async sendPhishingEmails() {
             if (!this.selectedDepartment) {
                 alert("Please select a department before sending emails.");
@@ -170,10 +174,24 @@ export default {
 
                 const data = await response.json();
                 this.message = data.message;
+                alert("Email Send to Candidates")
             } catch (error) {
                 console.error('Failed to send emails:', error);
                 this.message = 'Error sending emails. Please try again.';
             }
+        },
+
+        async downloadReport() {
+            const response = await fetch('https://phishing-mail-application.onrender.com/generate_reports');
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'candidate_reports.csv';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
         },
 
         async fetchReports() {
@@ -240,36 +258,6 @@ export default {
             return question && question.answer === answer;
         },
 
-        async downloadReport() {
-            const response = await fetch('https://phishing-mail-application.onrender.com/generate_reports');
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = 'candidate_reports.csv';
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-        },
-
-        async downloadPDF(colleagueId) {
-            try {
-                const response = await fetch(`https://phishing-mail-application.onrender.com/download_report/${colleagueId}`);
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = `report_${colleagueId}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-            } catch (error) {
-                console.error('Failed to download PDF report:', error);
-            }
-        },
-
         async emailedCandidatesReport() {
             if (this.isGenerating) return;
             this.isGenerating = true;
@@ -299,37 +287,6 @@ export default {
             } finally {
                 this.isGenerating = false;
                 this.startPolling();
-            }
-        },
-
-        handleFileUpload(event) {
-            this.file = event.target.files[0];
-        },
-
-        async uploadColleaguesData() {
-            if (!this.file) {
-                alert("Please select a file.");
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('file', this.file);
-
-            try {
-                const response = await fetch('https://phishing-mail-application.onrender.com/upload_colleagues_data', {
-                method: 'POST',
-                body: formData,
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                alert("Colleagues data updated successfully!");
-            } catch (error) {
-                console.error("Error uploading data:", error);
-                alert("Failed to upload data. Please try again.");
             }
         },
 
@@ -428,20 +385,6 @@ export default {
             this.resetForm();
         },
 
-
-        async editQuestion(question) {
-            this.currentQuestionId = question.id;
-            console.log('Editing Question ID:', this.currentQuestionId);
-            this.question = { ...question };
-
-            if (!Array.isArray(this.question.options)) {
-                this.question.options = [];
-            }
-
-            this.isEditing = true;
-            this.showQuestionForm = true;
-        },
-
         async deleteQuestion(id) {
             await fetch(`https://phishing-mail-application.onrender.com/questions/${id}`, {
                 method: 'DELETE'
@@ -481,7 +424,7 @@ export default {
 
         cancel() {
             this.resetQuestionForm();
-        }, 
+        },
     },
 
     async mounted() {
@@ -499,7 +442,7 @@ export default {
 
 
 <style scoped>
-    * {
+* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -507,7 +450,7 @@ export default {
 
 body {
     font-family: 'Arial', sans-serif;
-    background-color: #f7f7f7;
+    background-image: linear-gradient(to right, #f0f9ff, #cbebff);
     color: #333;
     padding-top: 80px;
 }
@@ -515,28 +458,31 @@ body {
 
 .logo {
     height: 40px;
-    margin-right: 10px;
     margin-right: 1rem;
-}
-
-.nav-links {
-    list-style: none;
-    display: flex;
+    filter: drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.2));
 }
 
 .nav-links li {
     margin-left: 20px;
 }
 
+.navbar {
+    background-color: #26c8bb;
+    color: white;
+    padding: 1rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
 .nav-links a {
     color: white;
     text-decoration: none;
     font-size: 18px;
-    transition: color 0.3s ease;
+    transition: color 0.3s ease, font-weight 0.3s ease;
 }
 
 .nav-links a:hover {
     color: #c2e8a7;
+    font-weight: bold;
 }
 
 .main-content {
@@ -545,10 +491,8 @@ body {
     background-color: #fff;
     border-radius: 12px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 1100px;
-    margin-left: auto;
-    margin-right: auto;
+    background-repeat: no-repeat;
+    background-size: cover;
 }
 
 h2 {
@@ -560,73 +504,51 @@ h2 {
 }
 
 button {
-    padding: 8px 12px;
+    padding: 8px 10px;
     font-size: 14px;
-    background-color: #007bff;
+    background-image: linear-gradient(to right, #4df19f, #34d399);
     color: #fff;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
-    margin: 5px 5px;
+    transition: background 0.3s ease;
+    margin: 10px 20px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
 }
-
 
 button:hover {
-    background-color: #57a015;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    background-image: linear-gradient(to right, #57a015, #4ca852);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
-
 
 table {
     width: 100%;
     border-collapse: collapse;
+    background-color: #f8fafc;
 }
 
-
-table, th, td {
-    border: 1px solid #ddd;
-    border-spacing: 0;
-}
-
-
-td {
-    padding: 4px 8px; 
-    border: 1px solid #ddd; 
-    font-size: 14px; 
-    text-align: left; 
-}
-
-th {
-    padding: 4px 8px; 
-    background-color: #f2f2f2; 
+table th,
+table td {
+    padding: 12px;
     text-align: left;
+    font-size: 14px;
+    border: 1px solid #ddd;
+}
+
+table th {
+    background-color: #c2e8a7;
     font-weight: bold;
-    border: 1px solid #ddd; 
-    font-size: 14px; 
 }
 
 tbody tr:nth-child(even) {
-    background-color: #f9f9f9;
-}
-
-
-
-tbody tr:hover {
     background-color: #f1f1f1;
 }
 
-
-tbody tr {
-    transition: background-color 0.3s ease;
-    height: auto; 
+tbody tr:hover {
+    background-color: #e1f5fe;
+    transition: background 0.3s ease;
 }
 
-td button {
-    padding: 10px 20px;
-    font-size: 14px;
-    border-radius: 5px;
-}
 
 @media (max-width: 768px) {
     .main-content {
@@ -634,7 +556,9 @@ td button {
         padding: 20px;
     }
 
-    table, th, td {
+    table,
+    th,
+    td {
         font-size: 14px;
         padding: 10px;
     }
@@ -678,7 +602,7 @@ select {
 
 
 .navbar {
-    background-color: #950707;
+    background-color: #26c8bb;
     color: white;
     padding: 1rem;
     position: relative;
@@ -688,11 +612,6 @@ select {
 .navbar-brand {
     display: flex;
     align-items: center;
-}
-
-.logo {
-    height: 40px;
-    margin-right: 1rem;
 }
 
 
@@ -707,23 +626,6 @@ select {
     flex-direction: column;
 }
 
-.questions-list {
-    max-height: 300px;
-    overflow-y: auto;
-    margin-top: 20px;
-}
-
-
-.navbar-buttons {
-    margin-left: auto;
-}
-
-.close-button {
-    padding: 6px 12px;
-    font-size: 12px;
-    border-radius: 4px;
-}
-
 .modal {
     position: fixed;
     top: 50%;
@@ -735,6 +637,37 @@ select {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     z-index: 1200;
     width: 800px;
+    border: 1px solid #26c8bb;
+}
+
+.questions-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 20px;
+}
+
+
+.navbar-buttons {
+    margin-left: auto;
+}
+
+.navbar-buttons button {
+    margin-left: auto;
+    background-color: #9de764;
+}
+
+.navbar-buttons button:hover {
+    margin-left: auto;
+    background-color: #529af3;
+}
+
+.close-button {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 4px;
+    background-image: linear-gradient(to right, #f64f4f, #e53935);
+    color: white;
+    background-color: #f44336;
 }
 
 .modal-content h3 {
@@ -773,8 +706,12 @@ select {
     margin-top: 10px;
 }
 
+.modal-content button::before {
+    content: "✓ ";
+}
+
 .modal-content button:hover {
-    background-color: #0056b3;
+    background-image: linear-gradient(to right, #f44336, #d32f2f);
 }
 
 .modal-content .close-button {
@@ -812,7 +749,8 @@ select {
     border-collapse: collapse;
 }
 
-.questions-list th, .questions-list td {
+.questions-list th,
+.questions-list td {
     padding: 10px;
     border: 1px solid #ddd;
 }
@@ -865,10 +803,40 @@ select {
 .form-group {
     display: flex;
     align-items: center;
+    margin-bottom: 1rem;
+    position: relative;
 }
 
 .form-group select {
-    margin-right: 10px;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    width: 200px;
+    appearance: none;
+    background-color: #f1f1f1;
+    color: #333;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+
+.form-group select:hover {
+    border-color: #26c8bb;
+}
+
+.form-group select:focus {
+    outline: none;
+    border-color: #69b820;
+    box-shadow: 0 0 5px rgba(105, 184, 32, 0.5);
+}
+
+.select-label {
+    font-weight: bold;
+    font-size: 18px;
+    margin-right: 12px;
+    color: #4d4d4d;
 }
 
 .form-buttons {
@@ -877,11 +845,11 @@ select {
 }
 
 .form-buttons button {
-    padding: 10px 15px; 
-    font-size: 16px; 
-    margin-left: 5px; 
-    cursor: pointer; 
-    border: none; 
+    padding: 10px 15px;
+    font-size: 16px;
+    margin-left: 5px;
+    cursor: pointer;
+    border: none;
     border-radius: 5px;
 }
 
@@ -903,4 +871,68 @@ select {
     background-color: #dc3545;
     color: white;
 }
+
+.select-department-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.select-department-label {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.select-department {
+    appearance: none;
+    padding: 12px 16px;
+    font-size: 16px;
+    border: 2px solid #26c8bb;
+    border-radius: 8px;
+    background-color: #f7f7f7;
+    color: #333;
+    position: relative;
+    cursor: pointer;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    width: 100%;
+    max-width: 300px;
+}
+
+.select-department:focus,
+.select-department:hover {
+    border-color: #4df19f;
+    background-color: #e3f7f3;
+    box-shadow: 0 0 8px rgba(38, 200, 187, 0.3);
+    outline: none;
+}
+.select-department::after {
+    content: "▼";
+    font-size: 12px;
+    color: #666;
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.select-department option {
+    padding: 10px;
+    background-color: #ffffff;
+    color: #333;
+    transition: background-color 0.2s ease;
+}
+
+.select-department option:hover {
+    background-color: #26c8bb;
+    color: #fff;
+}
+
+.candidate {
+    padding: 10px;
+}
+
 </style>
