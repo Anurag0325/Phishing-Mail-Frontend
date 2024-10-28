@@ -72,8 +72,10 @@
             <div class="select-department-container">
                 <select id="department" class="select-department" v-model="selectedDepartment">
                     <option value="" disabled>Select Department</option>
-                    <option value="HR">HR</option>
-                    <option value="Accounts">Accounts</option>
+                    <option value="Leadership">Leadership</option>
+                    <option value="Developer and Product Development">Developer and Product Development</option>
+                    <option value="Sales and Marketing, Finance, Admin">Sales and Marketing, Finance, Admin</option>
+                    <option value="HR, Information Security, Training and TMG">HR, Information Security, Training and TMG</option>
                 </select>
             </div>
 

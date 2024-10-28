@@ -4,7 +4,7 @@
             <!-- Phishing alert content -->
 
             <div v-if="!showStudyMaterial && !showQuestions && !showCloseButton" class="alert-popup">
-                <h2 class="popup-title">Alert: Phishing Attempt Detected!</h2>
+                <!-- <h2 class="popup-title">Alert: Phishing Attempt Detected!</h2>
                 <p class="warning-text blinking">
                     You've clicked on a link from a suspicious email, which could have led to a phishing attack. Cybercriminals use such tricks to steal sensitive information like your passwords, financial details, or personal data.
                 </p>
@@ -15,6 +15,15 @@
                     Please attend the tutorial to enhance your awareness and protect yourself from future threats.
                 </p>
                 <button class="button-primary" @click="startTutorial">Attend Tutorial</button>
+            </div> -->
+
+            <h1>You Have Been Phished!</h1>
+                <img src="\RIA_logo.jpeg" alt="Company Logo" class="ria-logo">
+                <div class="warning-text blinking">
+                    <p>This was a Phishing Simulation exercise conducted by RIA Advisory under the guidance of RIA CISO Salman Ansari. You shouldn't have clicked on the link. You can see that this email was generated from outside. The email is from a different domain than RIA Advisory. You should be cautious before clicking any unknown link that is from outside and enticing you to click on some link.</p>
+                </div>
+                <p class="warning">As you clicked on the link, it is mandatory for you to complete the RIA Phishing training. Click the link below to complete the training.</p>
+                <button class="button-primary" @click="startTutorial">RIA Phishing Training Link</button>   
             </div>
 
 
@@ -73,6 +82,26 @@
                 <button class="button-primary" @click="submitAnswers">Submit Answers</button>
             </div>
 
+            <div v-if="showScoreSection" class="score-container">
+                <h3 class="score-text">You scored {{ score }}%.</h3>
+
+                <button
+                    v-if="score >= 70"
+                    class="button-primary"
+                    @click="downloadPDF(colleague_id)">
+                    Download Certificate
+                </button>
+
+                <button
+                    v-else
+                    class="button-secondary"
+                    @click="redoQuiz">
+                    Redo Quiz
+                </button>
+
+                <!-- <button class="button-secondary" @click="gotoclose">Next</button> -->
+            </div>
+
             <div v-if="showCloseButton">
                 <p>Thank you for participating in the data phishing awareness program. Soon you will get your result.</p>
                 <button class="button-secondary" @click="closePopup">Close</button>
@@ -92,6 +121,9 @@ export default {
             questions: [],
             answers: [],
             isPresentationCompleted: false,
+            score: 0,
+            showScoreSection: false,
+            colleague_id: null,
         };
     },
     created() {
@@ -161,10 +193,31 @@ export default {
                 console.error('Error fetching questions:', error);
             }
         },
+        // async submitAnswers() {
+        //     const colleagueId = this.$route.params.colleague_id;
+        //     try {
+        //         const response = await fetch(`https://phishing-mail-application.onrender.com/submit_answers/${colleagueId}`, {
+        //             method: 'POST',
+        //             headers: {
+        //                 'Content-Type': 'application/json',
+        //             },
+        //             body: JSON.stringify({ answers: this.answers }),
+        //         });
+        //         const result = await response.json();
+        //         if (result.message) {
+        //             this.showQuestions = false;
+        //             this.showStudyMaterial = false;
+        //             this.showCloseButton = true;
+        //         }
+        //     } catch (error) {
+        //         console.error('Error submitting answers:', error);
+        //     }
+        // },
+
         async submitAnswers() {
             const colleagueId = this.$route.params.colleague_id;
             try {
-                const response = await fetch(`https://phishing-mail-application.onrender.com/submit_answers/${colleagueId}`, {
+                const response = await fetch(`http://127.0.0.1:5000/submit_answers/${colleagueId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -173,14 +226,66 @@ export default {
                 });
                 const result = await response.json();
                 if (result.message) {
+                    console.log('Submit Answers Response:', result);
+                    this.score = result.score;
                     this.showQuestions = false;
                     this.showStudyMaterial = false;
+                    this.showScoreSection = true;
                     this.showCloseButton = true;
                 }
             } catch (error) {
                 console.error('Error submitting answers:', error);
             }
         },
+
+        // async downloadPDF() {
+    //        console.log("Current colleague_id:", this.colleague_id);
+    //        try {
+    //            const response = await fetch(`http://127.0.0.1:5000/download_report/${this.colleague_id}`);
+    //            const blob = await response.blob();
+    //            const url = window.URL.createObjectURL(blob);
+    //            const a = document.createElement('a');
+    //            a.style.display = 'none';
+    //            a.href = url;
+    //            a.download = `report_${this.colleague_id}.pdf`;
+    //            document.body.appendChild(a);
+    //            a.click();
+    //            window.URL.revokeObjectURL(url);
+    //        } catch (error) {
+    //            console.error('Failed to download PDF report:', error);
+    //        }
+    //    },
+
+        async downloadPDF(colleagueId) {
+            try {
+                const response = await fetch(`http://127.0.0.1:5000/download_certificate/${colleagueId}`);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `certificate_${this.colleague_id}.pdf`; // Dynamic filename
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Error downloading PDF:', error);
+            }
+        },
+
+        redoQuiz() {
+            this.showScoreSection = false;
+            this.showQuestions = true;
+        },
+
+        gotoclose() {
+            this.showScoreSection = false;
+            this.showCloseButton = true;
+        },
+
         closePopup() {
             this.showPopup = false;
             window.close();
@@ -391,6 +496,27 @@ export default {
     to {
         visibility: hidden;
     }
+}
+
+h1 {
+    color: #dc3545; /* Red color for the heading */
+    text-align: center;
+}
+
+p {
+    margin-bottom: 15px;
+}
+
+.warning {
+   background-color: #ffeeba; /* Light yellow background for the warning */
+    border-left: 6px solid #ffc107; /* Yellow border */
+    padding: 10px;
+    margin: 20px 0;
+}
+
+.ria-logo {
+    width: 100px;
+    height: auto;
 }
 </style>
 
