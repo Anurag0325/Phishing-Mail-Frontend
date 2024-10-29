@@ -112,6 +112,15 @@
 
 <script>
 export default {
+
+    props: {
+       colleague_id: {
+           type: String,
+           required: true,
+       },
+   },
+
+   
     data() {
         return {
             showPopup: false,
@@ -130,6 +139,11 @@ export default {
         const colleagueId = this.$route.params.colleague_id;
         this.fetchData(colleagueId);
     },
+
+    mounted() {
+        this.colleague_id = this.$route.params.colleague_id;
+    },
+
     methods: {
 
         async fetchData(colleagueId) {
@@ -176,12 +190,14 @@ export default {
                 event.preventDefault();
             }
         },
+
         trackPresentationCompletion() {
-            const presentationDuration = 30000;
+            const presentationDuration = 5000;
             setTimeout(() => {
                 this.isPresentationCompleted = true;
             }, presentationDuration);
         },
+        
         async fetchQuestions() {
             try {
                 const response = await fetch(`https://phishing-mail-application.onrender.com/questions`);
@@ -217,7 +233,7 @@ export default {
         async submitAnswers() {
             const colleagueId = this.$route.params.colleague_id;
             try {
-                const response = await fetch(`http://127.0.0.1:5000/submit_answers/${colleagueId}`, {
+                const response = await fetch(`https://phishing-mail-application.onrender.com/submit_answers/${colleagueId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -258,7 +274,7 @@ export default {
 
         async downloadPDF(colleagueId) {
             try {
-                const response = await fetch(`http://127.0.0.1:5000/download_certificate/${colleagueId}`);
+                const response = await fetch(`https://phishing-mail-application.onrender.com/download_certificate/${colleagueId}`);
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }
