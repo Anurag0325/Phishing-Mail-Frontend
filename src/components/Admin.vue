@@ -90,10 +90,11 @@
                     <tr>
                         <th>ID</th>
                         <th>Colleague Name</th>
-                        <th>Clicked</th>
-                        <th>Answered</th>
+                        <th>Link Clicked</th>
+                        <th>Training Completed</th>
                         <th>Correct Answers</th>
                         <th>Score (out of 100)</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -104,6 +105,7 @@
                         <td>{{ report.answered ? 'Yes' : 'No' }}</td>
                         <td>{{ calculateCorrectAnswers(report.answers) }}/{{ questions.length }}</td>
                         <td>{{ calculateScoreOutOf100(report.answers) }}%</td>
+                        <td>{{ report.status }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -126,6 +128,7 @@ export default {
             showQuestionModal: false,
             selectedDepartment: '',
             isEditing: false,
+            status: "Pending",
             question: {
                 id: null,
                 question_text: '',

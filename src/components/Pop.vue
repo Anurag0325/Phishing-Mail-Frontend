@@ -82,7 +82,7 @@
                 <button class="button-primary" @click="submitAnswers">Submit Answers</button>
             </div>
 
-            <div v-if="showScoreSection" class="score-container">
+            <!-- <div v-if="showScoreSection" class="score-container">
                 <h3 class="score-text">You scored {{ score }}%.</h3>
 
                 <button
@@ -97,15 +97,32 @@
                     class="button-secondary"
                     @click="redoQuiz">
                     Redo Quiz
-                </button>
+                </button> -->
 
                 <!-- <button class="button-secondary" @click="gotoclose">Next</button> -->
+            <!-- </div> -->
+
+            <div v-if="showScoreSection" class="score-container">
+                <h3 class="score-text">You scored {{ score }}%.</h3>
+
+                <div v-if="score >= 70">
+                    <p>Thank you for participating in the data phishing awareness program. Soon you will get your result.</p>
+                    <button class="button-primary" @click="closePopup">
+                        Close
+                    </button>
+                </div>
+
+                <div v-else>
+                    <button class="button-secondary" @click="redoQuiz">
+                        Redo Quiz
+                    </button>
+                </div>
             </div>
 
-            <div v-if="showCloseButton">
+            <!-- <div v-if="showCloseButton">
                 <p>Thank you for participating in the data phishing awareness program. Soon you will get your result.</p>
                 <button class="button-secondary" @click="closePopup">Close</button>
-            </div>
+            </div> -->
         </div>
     </div>
 </template>
@@ -135,9 +152,20 @@ export default {
             colleague_id: null,
         };
     },
+    // created() {
+    //     const colleagueId = this.$route.params.colleague_id;
+    //     this.fetchData(colleagueId);
+    // },
+
     created() {
         const colleagueId = this.$route.params.colleague_id;
         this.fetchData(colleagueId);
+
+        // Check if the route is for study material
+        if (this.$route.path.startsWith('/study-material')) {
+            this.showStudyMaterial = true; // Open the study material section directly
+            this.trackPresentationCompletion();
+        }
     },
 
     mounted() {
@@ -197,7 +225,7 @@ export default {
                 this.isPresentationCompleted = true;
             }, presentationDuration);
         },
-        
+
         async fetchQuestions() {
             try {
                 const response = await fetch(`https://phishing-mail-application.onrender.com/questions`);
@@ -230,29 +258,79 @@ export default {
         //     }
         // },
 
+        // async submitAnswers() {
+        //     const colleagueId = this.$route.params.colleague_id;
+        //     try {
+        //         const response = await fetch(`https://phishing-mail-application.onrender.com/submit_answers/${colleagueId}`, {
+        //             method: 'POST',
+        //             headers: {
+        //                 'Content-Type': 'application/json',
+        //             },
+        //             body: JSON.stringify({ answers: this.answers }),
+        //         });
+        //         const result = await response.json();
+        //         if (result.message) {
+        //             console.log('Submit Answers Response:', result);
+        //             this.score = result.score;
+        //             this.showQuestions = false;
+        //             this.showStudyMaterial = false;
+        //             this.showScoreSection = true;
+        //             this.showCloseButton = true;
+        //         }
+        //     } catch (error) {
+        //         console.error('Error submitting answers:', error);
+        //     }
+        // },
+
         async submitAnswers() {
-            const colleagueId = this.$route.params.colleague_id;
-            try {
-                const response = await fetch(`https://phishing-mail-application.onrender.com/submit_answers/${colleagueId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ answers: this.answers }),
-                });
-                const result = await response.json();
-                if (result.message) {
-                    console.log('Submit Answers Response:', result);
-                    this.score = result.score;
-                    this.showQuestions = false;
-                    this.showStudyMaterial = false;
-                    this.showScoreSection = true;
-                    this.showCloseButton = true;
-                }
-            } catch (error) {
-                console.error('Error submitting answers:', error);
-            }
-        },
+    const colleagueId = this.$route.params.colleague_id;
+    try {
+        const response = await fetch(`http://127.0.0.1:5000/submit_answers/${colleagueId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ answers: this.answers }),
+        });
+        const result = await response.json();
+        if (result.message) {
+            this.score = result.score;
+            this.showQuestions = false;
+            this.showStudyMaterial = false;
+            this.showScoreSection = true;
+            this.showCloseButton = true;
+            
+            const status = this.score >= 70 ? 'Completed' : 'Pending';
+            // Update the status of the report
+            await this.updateReportStatus(colleagueId, status);
+
+            await this.sendEmail(this.score);
+
+            this.showScoreSection = true;
+        }
+    } catch (error) {
+        console.error('Error submitting answers:', error);
+    }
+},
+
+async updateReportStatus(colleagueId, status) {
+    try {
+        const response = await fetch(`http://127.0.0.1:5000/update_report_status/${colleagueId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status }),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to update report status');
+        }
+        console.log('Report status updated successfully');
+    } catch (error) {
+        console.error('Error updating report status:', error);
+    }
+},
+
 
         // async downloadPDF() {
     //        console.log("Current colleague_id:", this.colleague_id);
@@ -305,7 +383,36 @@ export default {
         closePopup() {
             this.showPopup = false;
             window.close();
+        },
+
+        async sendEmail(score) {
+    const colleagueId = this.$route.params.colleague_id;  // This should be an email, adjust if necessary
+    const studyMaterialLink = `http://localhost:8080/study-material/${colleagueId}`; // Update with your actual domain
+    const emailContent = score >= 70
+        ? { subject: "Training Program Completed", body: "Congratulations on completing the training program!" }
+        : { subject: "Training Program Incomplete", body: "You need to reattempt the training program. Please click the link to start again. You can review the study material [here](${studyMaterialLink})." };
+
+    try {
+        const response = await fetch(`http://127.0.0.1:5000/send_result_email`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                colleague_id: colleagueId,  // Make sure this is the email or use the correct identifier
+                subject: emailContent.subject,
+                body: emailContent.body,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to send email: ' + response.statusText);
         }
+        console.log('Email sent successfully');
+    } catch (error) {
+        console.error('Error sending email:', error);
+    }
+}
     }
 };
 </script>
@@ -535,4 +642,6 @@ p {
     height: auto;
 }
 </style>
+
+
 
