@@ -285,7 +285,7 @@ export default {
         async submitAnswers() {
     const colleagueId = this.$route.params.colleague_id;
     try {
-        const response = await fetch(`http://127.0.0.1:5000/submit_answers/${colleagueId}`, {
+        const response = await fetch(`https://phishing-mail-application.onrender.com/submit_answers/${colleagueId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -315,7 +315,7 @@ export default {
 
 async updateReportStatus(colleagueId, status) {
     try {
-        const response = await fetch(`http://127.0.0.1:5000/update_report_status/${colleagueId}`, {
+        const response = await fetch(`https://phishing-mail-application.onrender.com/update_report_status/${colleagueId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -387,13 +387,13 @@ async updateReportStatus(colleagueId, status) {
 
         async sendEmail(score) {
     const colleagueId = this.$route.params.colleague_id;  // This should be an email, adjust if necessary
-    const studyMaterialLink = `http://localhost:8080/study-material/${colleagueId}`; // Update with your actual domain
+    const studyMaterialLink = `https://phishing-mail-application.onrender.com/study-material/${colleagueId}`; // Update with your actual domain
     const emailContent = score >= 70
         ? { subject: "Training Program Completed", body: "Congratulations on completing the training program!" }
         : { subject: "Training Program Incomplete", body: "You need to reattempt the training program. Please click the link to start again. You can review the study material [here](${studyMaterialLink})." };
 
     try {
-        const response = await fetch(`http://127.0.0.1:5000/send_result_email`, {
+        const response = await fetch(`https://phishing-mail-application.onrender.com/send_result_email`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
