@@ -283,53 +283,53 @@ export default {
         // },
 
         async submitAnswers() {
-    const colleagueId = this.$route.params.colleague_id;
-    try {
-        const response = await fetch(`https://phishing-mail-application.onrender.com/submit_answers/${colleagueId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ answers: this.answers }),
-        });
-        const result = await response.json();
-        if (result.message) {
-            this.score = result.score;
-            this.showQuestions = false;
-            this.showStudyMaterial = false;
-            this.showScoreSection = true;
-            this.showCloseButton = true;
-            
-            const status = this.score >= 70 ? 'Completed' : 'Pending';
-            // Update the status of the report
-            await this.updateReportStatus(colleagueId, status);
+            const colleagueId = this.$route.params.colleague_id;
+            try {
+                const response = await fetch(`https://phishing-mail-application.onrender.com/submit_answers/${colleagueId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ answers: this.answers }),
+                });
+                const result = await response.json();
+                if (result.message) {
+                    this.score = result.score;
+                    this.showQuestions = false;
+                    this.showStudyMaterial = false;
+                    this.showScoreSection = true;
+                    this.showCloseButton = true;
+                    
+                    const status = this.score >= 70 ? 'Completed' : 'Pending';
+                    // Update the status of the report
+                    await this.updateReportStatus(colleagueId, status);
 
-            await this.sendEmail(this.score);
+                    await this.sendEmail(this.score);
 
-            this.showScoreSection = true;
-        }
-    } catch (error) {
-        console.error('Error submitting answers:', error);
-    }
-},
+                    this.showScoreSection = true;
+                }
+            } catch (error) {
+                console.error('Error submitting answers:', error);
+            }
+        },
 
-async updateReportStatus(colleagueId, status) {
-    try {
-        const response = await fetch(`https://phishing-mail-application.onrender.com/update_report_status/${colleagueId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ status }),
-        });
-        if (!response.ok) {
-            throw new Error('Failed to update report status');
-        }
-        console.log('Report status updated successfully');
-    } catch (error) {
-        console.error('Error updating report status:', error);
-    }
-},
+        async updateReportStatus(colleagueId, status) {
+            try {
+                const response = await fetch(`https://phishing-mail-application.onrender.com/update_report_status/${colleagueId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ status }),
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to update report status');
+                }
+                console.log('Report status updated successfully');
+            } catch (error) {
+                console.error('Error updating report status:', error);
+            }
+        },
 
 
         // async downloadPDF() {
@@ -386,33 +386,33 @@ async updateReportStatus(colleagueId, status) {
         },
 
         async sendEmail(score) {
-    const colleagueId = this.$route.params.colleague_id;  // This should be an email, adjust if necessary
-    const studyMaterialLink = `https://phishing-mail-application.onrender.com/study-material/${colleagueId}`; // Update with your actual domain
-    const emailContent = score >= 70
-        ? { subject: "Training Program Completed", body: "Congratulations on completing the training program!" }
-        : { subject: "Training Program Incomplete", body: "You need to reattempt the training program. Please click the link to start again. You can review the study material [here](${studyMaterialLink})." };
+            const colleagueId = this.$route.params.colleague_id;  // This should be an email, adjust if necessary
+            const studyMaterialLink = `https://phishing-mail-application.onrender.com/study-material/${colleagueId}`; // Update with your actual domain
+            const emailContent = score >= 70
+                ? { subject: "Training Program Completed", body: "Congratulations on completing the training program!" }
+                : { subject: "Training Program Incomplete", body: "You need to reattempt the training program. Please click the link to start again. You can review the study material [here](${studyMaterialLink})." };
 
-    try {
-        const response = await fetch(`https://phishing-mail-application.onrender.com/send_result_email`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                colleague_id: colleagueId,  // Make sure this is the email or use the correct identifier
-                subject: emailContent.subject,
-                body: emailContent.body,
-            }),
-        });
+            try {
+                const response = await fetch(`https://phishing-mail-application.onrender.com/send_result_email`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        colleague_id: colleagueId,  // Make sure this is the email or use the correct identifier
+                        subject: emailContent.subject,
+                        body: emailContent.body,
+                    }),
+                });
 
-        if (!response.ok) {
-            throw new Error('Failed to send email: ' + response.statusText);
+                if (!response.ok) {
+                    throw new Error('Failed to send email: ' + response.statusText);
+                }
+                console.log('Email sent successfully');
+            } catch (error) {
+                console.error('Error sending email:', error);
+            }
         }
-        console.log('Email sent successfully');
-    } catch (error) {
-        console.error('Error sending email:', error);
-    }
-}
     }
 };
 </script>

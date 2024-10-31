@@ -95,6 +95,7 @@
                         <th>Correct Answers</th>
                         <th>Score (out of 100)</th>
                         <th>Status</th>
+                        <th>Training Attepted Date</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -105,7 +106,21 @@
                         <td>{{ report.answered ? 'Yes' : 'No' }}</td>
                         <td>{{ calculateCorrectAnswers(report.answers) }}/{{ questions.length }}</td>
                         <td>{{ calculateScoreOutOf100(report.answers) }}%</td>
-                        <td>{{ report.status }}</td>
+                        <td>
+                            <span>
+                            <!-- Show status based on conditions -->
+                            <span v-if="report.status === 'Completed'">Complete</span>
+                                <span v-if="report.status === 'Pending'">
+                                    <button 
+                                        @click="sendReminder(report.id)"
+                                        style="margin-left: 10px;"
+                                        >
+                                            Pending
+                                    </button>
+                                </span>
+                            </span>
+                        </td>
+                        <td>{{ formatDate(report.completion_date) }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -139,6 +154,12 @@ export default {
     },
 
     methods: {
+        
+        formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-GB'); // Format as dd-mm-yyyy
+        },
 
         logout() {
             fetch('https://phishing-mail-application.onrender.com/logout', {
@@ -430,6 +451,26 @@ export default {
         cancel() {
             this.resetQuestionForm();
         },
+
+        async sendReminder(reportId) {
+            try {
+                const response = await fetch(`https://phishing-mail-application.onrender.com/send_reminder/${reportId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+                });
+                const data = await response.json();
+                if (response.ok) {
+                alert(data.message);
+                } else {
+                alert(data.error);
+                }
+            } catch (error) {
+                console.error("Error sending reminder:", error);
+            }
+        }
+
     },
 
     async mounted() {
