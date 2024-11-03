@@ -17,9 +17,9 @@
                 <button class="button-primary" @click="startTutorial">Attend Tutorial</button>
             </div> -->
 
-            <h1>You Have Been Phished!</h1>
+            <h1 class="blinking">You Have Been Phished!</h1>
                 <img src="\RIA_logo.jpeg" alt="Company Logo" class="ria-logo">
-                <div class="warning-text blinking">
+                <div class="warning-text">
                     <p>This was a Phishing Simulation exercise conducted by RIA Advisory under the guidance of RIA CISO Salman Ansari. You shouldn't have clicked on the link. You can see that this email was generated from outside. The email is from a different domain than RIA Advisory. You should be cautious before clicking any unknown link that is from outside and enticing you to click on some link.</p>
                 </div>
                 <p class="warning">As you clicked on the link, it is mandatory for you to complete the RIA Phishing training. Click the link below to complete the training.</p>
