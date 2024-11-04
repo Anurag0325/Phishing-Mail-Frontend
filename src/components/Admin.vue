@@ -82,6 +82,8 @@
 
             <button @click="sendPhishingEmails">Send Phishing Email</button>
             <button @click="downloadReport">Download Performance Report</button>
+            <button @click="emailedCandidatesReport">Generate Emailed Candidates Report</button>       
+            <button @click="sendReminder" class="sending-reminder-button">Send Reminder</button>
 
             <h2 class="candidate">Candidate Reports</h2>
 
@@ -95,7 +97,7 @@
                         <th>Correct Answers</th>
                         <th>Score (out of 100)</th>
                         <th>Status</th>
-                        <th>Training Attepted Date</th>
+                        <th>Training Attempted Date</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -110,14 +112,7 @@
                             <span>
                             <!-- Show status based on conditions -->
                             <span v-if="report.status === 'Completed'">Complete</span>
-                                <span v-if="report.status === 'Pending'">
-                                    <button 
-                                        @click="sendReminder(report.id)"
-                                        style="margin-left: 10px;"
-                                        >
-                                            Pending
-                                    </button>
-                                </span>
+                                <span v-if="report.status === 'Pending'" class="pending-status">Pending</span>
                             </span>
                         </td>
                         <td>{{ formatDate(report.completion_date) }}</td>
@@ -452,25 +447,42 @@ export default {
             this.resetQuestionForm();
         },
 
-        async sendReminder(reportId) {
-            try {
-                const response = await fetch(`https://phishing-mail-application.onrender.com/send_reminder/${reportId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-                });
-                const data = await response.json();
-                if (response.ok) {
-                alert(data.message);
-                } else {
-                alert(data.error);
-                }
-            } catch (error) {
-                console.error("Error sending reminder:", error);
-            }
-        }
+        // async sendReminder() {
+        //     try {
+        //         const response = await fetch(`https://phishing-mail-application.onrender.com/send_reminder/${reportId}`, {
+        //         method: 'POST',
+        //         headers: {
+        //             'Content-Type': 'application/json'
+        //         }
+        //         });
+        //         const data = await response.json();
+        //         if (response.ok) {
+        //         alert(data.message);
+        //         } else {
+        //         alert(data.error);
+        //         }
+        //     } catch (error) {
+        //         console.error("Error sending reminder:", error);
+        //     }
+        // }
 
+        async sendReminder() {
+            try {
+                const pendingReports = this.reports.filter(report => report.status === 'Pending');
+                for (const report of pendingReports) {
+                    await fetch(`https://phishing-mail-application.onrender.com/send_reminder/${report.id}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                }
+                alert('Reminders sent to all pending reports.');
+            } catch (error) {
+                console.error('Error sending reminders:', error);
+                alert('Failed to send reminders. Please try again.');
+            }
+        },
     },
 
     async mounted() {
@@ -979,6 +991,24 @@ select {
 
 .candidate {
     padding: 10px;
+}
+
+.sending-reminder-button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 10px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.sending-reminder-button:hover {
+    background-color: #0056b3;
+}
+
+.pending-status {
+    color: rgb(232, 15, 15);
+    font-weight: bold;
 }
 
 </style>
