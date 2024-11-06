@@ -106,8 +106,10 @@
                         <td>{{ getColleagueName(report.colleague_id) }}</td>
                         <td>{{ report.clicked ? 'Yes' : 'No' }}</td>
                         <td>{{ report.answered ? 'Yes' : 'No' }}</td>
-                        <td>{{ calculateCorrectAnswers(report.answers) }}/{{ questions.length }}</td>
-                        <td>{{ calculateScoreOutOf100(report.answers) }}%</td>
+                        <!-- <td>{{ calculateCorrectAnswers(report.answers) }}/{{ questions.length }}</td>
+                        <td>{{ calculateScoreOutOf100(report.answers) }}%</td> -->
+                        <td>{{ calculateCorrectAnswers(report.score) }}/{{ report.answers.length }}</td>
+                        <td>{{ report.score }}%</td>
                         <td>
                             <span>
                             <!-- Show status based on conditions -->
@@ -215,16 +217,29 @@ export default {
             window.URL.revokeObjectURL(url);
         },
 
+        // async fetchReports() {
+        //     try {
+        //         const response = await fetch('https://phishing-mail-application.onrender.com/reports');
+        //         if (!response.ok) {
+        //             throw new Error(`HTTP error! Status: ${response.status}`);
+        //         }
+        //         const data = await response.json();
+        //         this.reports = data;
+        //     } catch (error) {
+        //         console.error('Failed to fetch reports:', error);
+        //     }
+        // },
+
         async fetchReports() {
             try {
-                const response = await fetch('https://phishing-mail-application.onrender.com/reports');
+                const response = await fetch('https://phishing-mail-application.onrender.com/get_all_reports');
                 if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
+                    throw new Error('Failed to fetch reports');
                 }
                 const data = await response.json();
-                this.reports = data;
+                this.reports = data.reports;  // Assuming 'reports' is the key in the response
             } catch (error) {
-                console.error('Failed to fetch reports:', error);
+                console.error('Error fetching reports:', error);
             }
         },
 
@@ -253,17 +268,28 @@ export default {
             return colleague ? colleague.name : 'Unknown';
         },
 
-        calculateCorrectAnswers(answers) {
-            if (!Array.isArray(answers) || answers.length === 0) {
-                return 0;
+        // calculateCorrectAnswers(answers) {
+        //     if (!Array.isArray(answers) || answers.length === 0) {
+        //         return 0;
+        //     }
+
+        //     let correctAnswers = 0;
+        //     answers.forEach((answer, index) => {
+        //         if (this.isCorrect(index, answer)) {
+        //             correctAnswers++;
+        //         }
+        //     });
+        //     return correctAnswers;
+        // },
+
+        calculateCorrectAnswers(score) {
+            if (typeof score !== 'number' || isNaN(score)) {
+                return 0; // If score is not a valid number, return 0
             }
 
-            let correctAnswers = 0;
-            answers.forEach((answer, index) => {
-                if (this.isCorrect(index, answer)) {
-                    correctAnswers++;
-                }
-            });
+            // Calculate the correct number of answers by dividing the score by 10
+            const correctAnswers = Math.round(score / 10);
+
             return correctAnswers;
         },
 

@@ -67,7 +67,8 @@
             <div v-if="showQuestions" class="questions-container">
                 <h2 class="popup-title">Quiz: Phishing Awareness</h2>
                 <div class="questions-wrapper">
-                    <div v-for="(question, index) in questions" :key="index" class="question">
+                    <!-- <div v-for="(question, index) in questions" :key="index" class="question"> -->
+                    <div v-for="(question, index) in selectedQuestions" :key="index" class="question">
                         <p class="question-text">{{ question.question_text }}</p>
                         <ul class="options-list">
                             <li v-for="(option, idx) in question.options" :key="idx" class="option-item">
@@ -226,17 +227,33 @@ export default {
             }, presentationDuration);
         },
 
+        // async fetchQuestions() {
+        //     try {
+        //         const response = await fetch(`https://phishing-mail-application.onrender.com/questions`);
+        //         const data = await response.json();
+        //         this.questions = data;
+        //         this.answers = Array(data.length).fill(null);
+        //         this.showQuestions = true;
+        //     } catch (error) {
+        //         console.error('Error fetching questions:', error);
+        //     }
+        // },
+
         async fetchQuestions() {
             try {
-                const response = await fetch(`https://phishing-mail-application.onrender.com/questions`);
+                const response = await fetch('https://phishing-mail-application.onrender.com/get_random_questions');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch questions');
+                }
                 const data = await response.json();
-                this.questions = data;
-                this.answers = Array(data.length).fill(null);
+                this.selectedQuestions = data.questions; // Store fetched questions in a variable
+                this.answers = Array(this.selectedQuestions.length).fill(null); // Initialize answers array
                 this.showQuestions = true;
             } catch (error) {
                 console.error('Error fetching questions:', error);
             }
         },
+
         // async submitAnswers() {
         //     const colleagueId = this.$route.params.colleague_id;
         //     try {
@@ -282,45 +299,107 @@ export default {
         //     }
         // },
 
+        // async submitAnswers() {
+        //     const colleagueId = this.$route.params.colleague_id;
+        //     try {
+        //         const response = await fetch(`https://phishing-mail-application.onrender.com/submit_answers/${colleagueId}`, {
+        //             method: 'POST',
+        //             headers: {
+        //                 'Content-Type': 'application/json',
+        //             },
+        //             body: JSON.stringify({ answers: this.answers }),
+        //         });
+        //         const result = await response.json();
+        //         if (result.message) {
+        //             this.score = result.score;
+        //             this.showQuestions = false;
+        //             this.showStudyMaterial = false;
+        //             this.showScoreSection = true;
+        //             this.showCloseButton = true;
+                    
+        //             const status = this.score >= 70 ? 'Completed' : 'Pending';
+        //             // Update the status of the report
+        //             await this.updateReportStatus(colleagueId, status);
+
+        //             await this.sendEmail(this.score);
+
+        //             this.showScoreSection = true;
+        //         }
+        //     } catch (error) {
+        //         console.error('Error submitting answers:', error);
+        //     }
+        // },
+
         async submitAnswers() {
-            const colleagueId = this.$route.params.colleague_id;
             try {
-                const response = await fetch(`https://phishing-mail-application.onrender.com/submit_answers/${colleagueId}`, {
+                let score = 0;
+                const totalQuestions = this.selectedQuestions.length; // Use selectedQuestions here
+
+                // Check answers and calculate score
+                this.answers.forEach((answer, index) => {
+                    if (answer === this.selectedQuestions[index].correct_answer) {
+                        score++;
+                    }
+                });
+
+                // Send answers and score to the backend
+                const response = await fetch(`https://phishing-mail-application.onrender.com/submit_answers/${this.colleague_id}`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ answers: this.answers }),
+                    body: JSON.stringify({
+                        answers: this.answers,
+                        score: score,
+                        questions: this.selectedQuestions // Send the fetched questions to compare the answers
+                    })
                 });
+
                 const result = await response.json();
-                if (result.message) {
+                if (response.ok) {
+                    console.log(result.message);
+                    this.showScoreSection = true;
                     this.score = result.score;
                     this.showQuestions = false;
                     this.showStudyMaterial = false;
-                    this.showScoreSection = true;
                     this.showCloseButton = true;
-                    
-                    const status = this.score >= 70 ? 'Completed' : 'Pending';
-                    // Update the status of the report
-                    await this.updateReportStatus(colleagueId, status);
-
-                    await this.sendEmail(this.score);
-
-                    this.showScoreSection = true;
+                } else {
+                    console.error('Error submitting answers:', result.error);
                 }
             } catch (error) {
                 console.error('Error submitting answers:', error);
             }
         },
 
-        async updateReportStatus(colleagueId, status) {
+        // async updateReportStatus(colleagueId, status) {
+        //     try {
+        //         const response = await fetch(`https://phishing-mail-application.onrender.com/update_report_status/${colleagueId}`, {
+        //             method: 'POST',
+        //             headers: {
+        //                 'Content-Type': 'application/json',
+        //             },
+        //             body: JSON.stringify({ status }),
+        //         });
+        //         if (!response.ok) {
+        //             throw new Error('Failed to update report status');
+        //         }
+        //         console.log('Report status updated successfully');
+        //     } catch (error) {
+        //         console.error('Error updating report status:', error);
+        //     }
+        // },
+
+
+        async updateReportStatus(colleagueId, score) {
             try {
                 const response = await fetch(`https://phishing-mail-application.onrender.com/update_report_status/${colleagueId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ status }),
+                    body: JSON.stringify({
+                        score: score,  // Send the score to be updated in the database
+                    }),
                 });
                 if (!response.ok) {
                     throw new Error('Failed to update report status');
@@ -370,9 +449,31 @@ export default {
             }
         },
 
-        redoQuiz() {
+        // redoQuiz() {
+        //     this.showScoreSection = false;
+        //     this.showQuestions = true;
+        // },
+
+        async redoQuiz() {
             this.showScoreSection = false;
-            this.showQuestions = true;
+            this.showQuestions = true; // Hide the score section
+
+            // Clear previous answers
+            this.answers = Array(this.selectedQuestions.length).fill(null); // Reset answers array
+
+            try {
+                // Fetch a new set of random questions
+                const response = await fetch('https://phishing-mail-application.onrender.com/get_random_questions');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch new questions');
+                }
+
+                const data = await response.json();
+                this.selectedQuestions = data.questions; // Store new questions
+                this.showQuestions = true; // Show the questions section again
+            } catch (error) {
+                console.error('Error fetching new questions:', error);
+            }
         },
 
         gotoclose() {
@@ -385,12 +486,42 @@ export default {
             window.close();
         },
 
+        // async sendEmail(score) {
+        //     const colleagueId = this.$route.params.colleague_id;  // This should be an email, adjust if necessary
+        //     const studyMaterialLink = `https://phishing-mail-application.onrender.com/study-material/${colleagueId}`; // Update with your actual domain
+        //     const emailContent = score >= 70
+        //         ? { subject: "Training Program Completed", body: "Congratulations on completing the training program!" }
+        //         : { subject: "Training Program Incomplete", body: "You need to reattempt the training program. Please click the link to start again. You can review the study material [here](${studyMaterialLink})." };
+
+        //     try {
+        //         const response = await fetch(`https://phishing-mail-application.onrender.com/send_result_email`, {
+        //             method: 'POST',
+        //             headers: {
+        //                 'Content-Type': 'application/json',
+        //             },
+        //             body: JSON.stringify({
+        //                 colleague_id: colleagueId,  // Make sure this is the email or use the correct identifier
+        //                 subject: emailContent.subject,
+        //                 body: emailContent.body,
+        //             }),
+        //         });
+
+        //         if (!response.ok) {
+        //             throw new Error('Failed to send email: ' + response.statusText);
+        //         }
+        //         console.log('Email sent successfully');
+        //     } catch (error) {
+        //         console.error('Error sending email:', error);
+        //     }
+        // }
+
+
         async sendEmail(score) {
             const colleagueId = this.$route.params.colleague_id;  // This should be an email, adjust if necessary
-            const studyMaterialLink = `https://phishing-mail-application.onrender.com/study-material/${colleagueId}`; // Update with your actual domain
+            const studyMaterialLink = `https://phishing-mail-application.onrender.com/study-material/${colleagueId}`;
             const emailContent = score >= 70
-                ? { subject: "Training Program Completed", body: "Congratulations on completing the training program!" }
-                : { subject: "Training Program Incomplete", body: "You need to reattempt the training program. Please click the link to start again. You can review the study material [here](${studyMaterialLink})." };
+                ? { subject: "Training Program Completed", body: `Congratulations on completing the training program! Your score is ${score}.` }
+                : { subject: "Training Program Incomplete", body: `You need to reattempt the training program. Your score is ${score}. You can review the study material [here](${studyMaterialLink}).` };
 
             try {
                 const response = await fetch(`https://phishing-mail-application.onrender.com/send_result_email`, {
