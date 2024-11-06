@@ -152,10 +152,22 @@ export default {
 
     methods: {
         
+        // formatDate(dateString) {
+        //     if (!dateString) return 'N/A';
+        //     const date = new Date(dateString);
+        //     return date.toLocaleDateString('en-GB'); // Format as dd-mm-yyyy
+        // },
+
         formatDate(dateString) {
             if (!dateString) return 'N/A';
             const date = new Date(dateString);
-            return date.toLocaleDateString('en-GB'); // Format as dd-mm-yyyy
+            // return date.toLocaleDateString('en-GB'); // Format as dd-mm-yyyy
+            // return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
+
+            const day = date.getUTCDate().toString().padStart(2, '0');
+            const month = (date.getUTCMonth() + 1).toString().padStart(2, '0'); // Months are 0-based
+            const year = date.getUTCFullYear();
+            return `${day}-${month}-${year}`; // Format as dd-mm-yyyy
         },
 
         logout() {
